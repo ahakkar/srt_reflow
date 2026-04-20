@@ -35,30 +35,28 @@ def format_subtitles(input_text: str) -> str:
 
     return "\n\n".join(formatted_blocks)
 
+def detect_encoding(file_path: str) -> str:
+    with open(file_path, 'rb') as file:
+        raw_bytes = file.read()
+
+    detected = chardet.detect(raw_bytes)
+    encoding = detected['encoding']
+
+    if not encoding:
+        print("Encoding was not detected, aborting")
+        sys.exit(1)
+
+    return encoding
+
+
 def process_subtitle_file(file_path: str) -> tuple[str, Optional[str]]:
-    try:
-        # read, binary
-        with open(file_path, 'rb') as file:
-            raw_bytes = file.read()
+    encoding = detect_encoding(file_path)    
 
-        detected = chardet.detect(raw_bytes)
-        encoding: Optional[str] = detected['encoding']
+    with open(file_path, 'r', encoding=encoding) as file:
+        raw_content = file.read()
 
-        if not encoding:
-            print("Encoding was not detected, aborting")
-            sys.exit(1)
-
-        raw_content = raw_bytes.decode(encoding)
-        formatted_text = format_subtitles(raw_content)
-
-        return (formatted_text, encoding)
-
-    except FileNotFoundError:
-        print(f"Error: The file at {file_path} was not found.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        sys.exit(1)
+    formatted_text = format_subtitles(raw_content)
+    return (formatted_text, encoding)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
