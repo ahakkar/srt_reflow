@@ -3,6 +3,7 @@
 import re
 import sys
 import os
+import chardet
 
 def format_subtitles(input_text):
     # Split by double newlines to isolate each subtitle block
@@ -33,12 +34,16 @@ def format_subtitles(input_text):
 
 def process_subtitle_file(file_path):
     try:
-        with open(file_path, 'r', encoding='utf-8-sig') as file:
-            raw_content = file.read()
-        
-        formatted_text = format_subtitles(raw_content)        
+        # read, binary
+        with open(file_path, 'rb') as file:
+            raw_bytes = file.read()
+        detected = chardet.detect(raw_bytes)
+        encoding = detected['encoding']
+        raw_content = raw_bytes.decode(encoding)
 
-        return formatted_text
+        formatted_text = format_subtitles(raw_content)
+
+        return formatted_text, encoding
 
     except FileNotFoundError:
         return f"Error: The file at {file_path} was not found."
@@ -55,9 +60,9 @@ if __name__ == "__main__":
     # Split name and extension, e.g. "old.srt" → "old" + ".srt"
     name, ext = os.path.splitext(input_path)
     output_path = f"{name}-new{ext}"  # → "old-new.srt"
-    result = process_subtitle_file(input_path)
+    result, detected_encoding = process_subtitle_file(input_path)
 
-    with open(output_path, 'w', encoding='utf-8-sig') as f:
+    with open(output_path, 'w', encoding=detected_encoding) as f:
         f.write(result)
         
     print(f"Saved to: {output_path}")
